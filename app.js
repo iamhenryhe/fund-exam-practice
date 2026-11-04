@@ -395,8 +395,12 @@
     $("brand-home").addEventListener("click", () => showView(els.homeView));
     $("practice-home").addEventListener("click", () => showView(els.homeView));
     $("wrong-home").addEventListener("click", () => showView(els.homeView));
-    $("quick-subject-1").addEventListener("click", () => openPractice("fund1"));
-    $("quick-subject-2").addEventListener("click", () => openPractice("fund2"));
+    const quickStart = $("quick-start");
+    if (quickStart) quickStart.addEventListener("click", () => openPractice("fund2"));
+    const quickSubject1 = $("quick-subject-1");
+    if (quickSubject1) quickSubject1.addEventListener("click", () => openPractice("fund1"));
+    const quickSubject2 = $("quick-subject-2");
+    if (quickSubject2) quickSubject2.addEventListener("click", () => openPractice("fund2"));
     $("open-wrong").addEventListener("click", openWrongView);
     $("progress-chip").addEventListener("click", openWrongView);
     $("open-practice-wrong").addEventListener("click", () => openPractice(current.subjectId, { wrongOnly: true }));
