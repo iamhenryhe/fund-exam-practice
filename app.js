@@ -169,14 +169,6 @@
     return index >= 0 ? index : 0;
   }
 
-  function nextPracticeSubject() {
-    return [...meta.subjects].sort((left, right) => {
-      const leftDone = submittedIds().filter((id) => id.startsWith(`${left.id}-`)).length / left.count;
-      const rightDone = submittedIds().filter((id) => id.startsWith(`${right.id}-`)).length / right.count;
-      return leftDone - rightDone;
-    })[0] || meta.subjects[0];
-  }
-
   function buildQuestionList() {
     let questions = getSubjectQuestions(current.subjectId).filter((question) => {
       const chapterOk = current.filters.chapter === "all" || question.chapter === current.filters.chapter;
@@ -403,7 +395,8 @@
     $("brand-home").addEventListener("click", () => showView(els.homeView));
     $("practice-home").addEventListener("click", () => showView(els.homeView));
     $("wrong-home").addEventListener("click", () => showView(els.homeView));
-    $("quick-start").addEventListener("click", () => openPractice(nextPracticeSubject().id));
+    $("quick-subject-1").addEventListener("click", () => openPractice("fund1"));
+    $("quick-subject-2").addEventListener("click", () => openPractice("fund2"));
     $("open-wrong").addEventListener("click", openWrongView);
     $("progress-chip").addEventListener("click", openWrongView);
     $("open-practice-wrong").addEventListener("click", () => openPractice(current.subjectId, { wrongOnly: true }));
