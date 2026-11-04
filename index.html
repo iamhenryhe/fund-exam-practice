@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#102a43" />
+    <title>基金考试刷题站 · 科目一 & 科目二</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <div class="brand-wrap">
+          <button class="brand" id="brand-home" type="button" aria-label="返回首页">
+            <span class="brand-mark">F</span>
+            <span>
+              <strong>FundLab</strong>
+              <small>基金考试刷题站</small>
+            </span>
+          </button>
+          <span class="beta-pill">个人备考版</span>
+        </div>
+        <div class="topbar-actions">
+          <button class="icon-btn" id="theme-toggle" type="button" aria-label="切换显示模式">◐</button>
+          <button class="profile-chip" id="progress-chip" type="button">本地进度 <span id="progress-chip-value">0%</span></button>
+        </div>
+      </header>
+
+      <main>
+        <section class="view active" id="home-view">
+          <div class="hero-grid">
+            <div class="hero-copy">
+              <div class="eyebrow"><span class="eyebrow-dot"></span> 2026 年 11 月 28 日 · 倒计时备考</div>
+              <h1>把两门考试，<br /><em>拆成今天能完成的题。</em></h1>
+              <p class="hero-text">科目一与科目二分开练习，选完立即看正确答案和解析。历史题库按年份与来源展示，答题、错题和收藏只保存在当前浏览器。</p>
+              <div class="hero-actions">
+                <button class="primary-btn" id="quick-start" type="button">开始今日练习 <span>→</span></button>
+                <button class="ghost-btn" id="open-wrong" type="button">查看错题本 <span id="wrong-count-badge">0</span></button>
+              </div>
+            </div>
+            <div class="countdown-card">
+              <div class="countdown-head"><span>距离考试</span><span class="live-dot">● 进行中</span></div>
+              <div class="countdown-number" id="days-left">--</div>
+              <div class="countdown-label">天</div>
+              <div class="countdown-date">2026.11.28 · 全国统一考试</div>
+              <div class="countdown-track"><span id="countdown-progress"></span></div>
+              <div class="countdown-foot"><span>每科 100 道单选题</span><span>120 分钟</span></div>
+            </div>
+          </div>
+
+          <div class="section-heading">
+            <div><span class="section-kicker">选择科目</span><h2>今天练哪一科？</h2></div>
+            <span class="question-total" id="question-total-label">题库加载中…</span>
+          </div>
+          <div class="subject-grid" id="subject-grid"></div>
+
+          <div class="home-lower-grid">
+            <section class="panel plan-panel">
+              <div class="panel-heading"><div><span class="section-kicker">备考节奏</span><h3>你的练习概览</h3></div><button class="text-btn" id="reset-progress" type="button">重置本地进度</button></div>
+              <div class="stat-row">
+                <div class="stat-item"><span class="stat-value" id="stat-answered">0</span><span class="stat-label">已作答</span></div>
+                <div class="stat-item"><span class="stat-value" id="stat-accuracy">0%</span><span class="stat-label">总体正确率</span></div>
+                <div class="stat-item"><span class="stat-value" id="stat-wrong">0</span><span class="stat-label">待复习错题</span></div>
+              </div>
+              <div class="subject-progress-list" id="subject-progress-list"></div>
+            </section>
+            <section class="panel guide-panel">
+              <div class="panel-heading"><div><span class="section-kicker">考试信息</span><h3>先记住这几件事</h3></div><span class="source-tag">官方大纲</span></div>
+              <ul class="guide-list">
+                <li><span class="guide-icon">01</span><div><strong>科目一</strong><p>《基金基础知识与法律法规》</p></div></li>
+                <li><span class="guide-icon">02</span><div><strong>科目二</strong><p>《证券投资基金基础知识》</p></div></li>
+                <li><span class="guide-icon">✓</span><div><strong>考试形式</strong><p>闭卷机考 · 100 道单选题 · 60 分合格</p></div></li>
+              </ul>
+              <p class="fine-print">题目主要来自 <a href="https://github.com/mrchzh/fund-qualification-examination" target="_blank" rel="noreferrer">公开 GitHub 题库</a> 的历史整理，题目年份主要为 2015–2021；不等同于 2026 年官方真题。考试安排与大纲请以 <a href="https://www.amac.org.cn/xwfb/tzgg/202611/t20261103_28194.html" target="_blank" rel="noreferrer">中基协公告</a> 为准。</p>
+            </section>
+          </div>
+        </section>
+
+        <section class="view" id="practice-view">
+          <div class="practice-topline">
+            <button class="back-btn" id="practice-home" type="button">← 返回首页</button>
+            <div class="practice-title-wrap"><span class="practice-subject-pill" id="practice-subject-pill">科目二</span><h2 id="practice-title">证券投资基金基础知识</h2></div>
+            <div class="practice-toolbar"><button class="toolbar-btn" id="toggle-order" type="button">↝ 顺序</button><button class="toolbar-btn" id="practice-filters" type="button">筛选</button></div>
+          </div>
+          <div class="filter-bar" id="filter-bar">
+            <label>章节<select id="chapter-filter"><option value="all">全部章节</option></select></label>
+            <label>题型<select id="type-filter"><option value="all">全部题型</option><option value="single">单选题</option><option value="multi">多选题</option><option value="tf">判断题</option></select></label>
+            <button class="small-btn" id="apply-filter" type="button">应用</button>
+          </div>
+          <div class="practice-layout">
+            <aside class="question-sidebar">
+              <div class="sidebar-summary"><div><span class="sidebar-label">当前进度</span><strong id="practice-progress-text">0 / 0</strong></div><div class="mini-ring" id="mini-ring"><span>0%</span></div></div>
+              <div class="progress-line"><span id="practice-progress-line"></span></div>
+              <div class="question-nav-head"><span>题目导航</span><span class="legend"><i class="legend-dot answered"></i>已答 <i class="legend-dot wrong"></i>错题</span></div>
+              <div class="question-nav" id="question-nav"></div>
+              <div class="sidebar-bottom"><button class="outline-btn full" id="open-practice-wrong" type="button">错题本 <span id="practice-wrong-count">0</span></button></div>
+            </aside>
+            <section class="question-card-wrap">
+              <div class="question-card" id="question-card"></div>
+            </section>
+          </div>
+        </section>
+
+        <section class="view" id="wrong-view">
+          <div class="practice-topline"><button class="back-btn" id="wrong-home" type="button">← 返回首页</button><div class="practice-title-wrap"><span class="practice-subject-pill wrong-pill">复习模式</span><h2>错题本</h2></div><div></div></div>
+          <div class="wrong-intro"><div><span class="section-kicker">错题复盘</span><h1>把不会的题，变成下一次的分数。</h1><p>错题记录只保存在当前浏览器，可以随时清空或重新练习。</p></div><button class="danger-btn" id="clear-wrong" type="button">清空错题</button></div>
+          <div class="wrong-list" id="wrong-list"></div>
+        </section>
+      </main>
+
+      <footer class="footer"><span>FundLab · 个人备考工具</span><span>资料范围：中基协 2026 年度修订考试大纲</span></footer>
+    </div>
+    <div class="toast" id="toast" role="status"></div>
+    <script src="./data/questions.js"></script>
+    <script src="./app.js"></script>
+  </body>
+</html>
