@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="zh-CN">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>科目二剩余考点</title>
+<style>
+body{font:17px/1.6 system-ui,sans-serif;max-width:850px;margin:auto;padding:20px;color:#172539;background:#f5f7fb}
+section,details{background:white;border:1px solid #dbe1ea;border-radius:10px;padding:12px;margin:10px 0}
+button,select{font:inherit;padding:8px 12px;cursor:pointer} summary{cursor:pointer;font-weight:650} .option{display:block;margin:8px 0;width:100%;text-align:left} #feedback{white-space:pre-wrap} button:disabled{cursor:default;color:#172539} button.correct{background:#c9f0d7} button.wrong{background:#ffdedd} a{color:#184da9}
+</style>
+<a href="./">← 返回基金刷题首页</a>
+<h1>科目二剩余考点</h1>
+<p id="status">正在加载题库…</p>
+<main id="groups"></main>
+<section id="quiz" hidden></section>
+<script>
+const byId=id=>document.getElementById(id);
+const groups=byId('groups'),quiz=byId('quiz'),status=byId('status');
+const key='fundlab-fund2-review-v1';
+let saved={};
+try{saved=JSON.parse(localStorage.getItem(key)||'{}')||{}}catch{}
+const norm=s=>s.normalize('NFKC').replace(/\s+/g,'');
+const signature=q=>JSON.stringify([q.type,norm(q.prompt),q.options.map(norm).sort(),q.answer.map(i=>norm(q.options[i])).sort()]);
+const pending=i=>(i>=500&&i<1000)||i>=1300;
+const chapters={
+  6:[
+    ['3-4 货币时间价值与利率',/利率|货币的时间价值|单利|PV和FV/,/即期利率|名义利率|单利|PV和FV/],
+    ['3-5 常用描述性统计概念',/分位数|相关性|标准差/],
+    ['3-1 三大财务报表',/利润和现金流/],
+    ['3-2 财务报表分析',/./]],
+  8:[['5-7 货币市场工具',/货币市场/],['5-2 债券估值分析',/估值/],['5-3 债券的收益率',/收益率/],['5-1 债券与债券市场',/风险/]],
+  9:[['6-5 基本衍生工具的比较',/远期、期货、期权/],['6-3 期权合约',/期权/],['6-4 互换合约',/互换/],['6-2 远期合约和期货合约',/远期|期货/],['6-1 衍生工具概述',/./]],
+  15:[['12-4 风险调整后收益',/风险调整/],['12-2 绝对收益与相对收益',/绝对|相对/]],
+  17:[['14-6 银行间债券市场的结算',/银行间债券结算/],['14-5 银行间债券市场的交易',/银行间债券市场/],['14-4 场内证券交易特别规定及事项',/特别规定/],['14-3 场内证券交易与结算涉及的费用',/费用/],['14-1 场内证券交易所与结算机构',/结算机构/],['14-2 场内证券交易的结算原则、方式与内容',/结算|PROP/]],
+  18:[['15-3 基金费用',/费用|管理费/],['15-5 基金会计核算的特点',/会计|财务|收入/],['15-2 基金资产估值程序',/程序|投资品种/],['15-1 基金资产估值概述',/估值/]],
+  19:[['16-1 基金利润分配',/利润|分红|分拆/],['16-2 投资者买卖基金产生的税收',/投资者/]]
+};
+function classify(q){
+ const ch=Number(q.chapter.match(/\d+/)?.[0]), t=q.topic, p=q.prompt;
+ if(/质押式回购|买断式回购/.test(p)){
+   const sub=/质押式回购/.test(p)?(/买断式回购/.test(p)?'质押式与买断式回购对比':'质押式回购'):'买断式回购';
+   return [ch===17 && /场内/.test(t)?'14-4 场内证券交易特别规定及事项':'14-6 银行间债券市场的结算',sub];
+ }
+ if(ch===18 && /暂停估值|估值错误|计价错误/.test(p))return ['15-4 计价错误的处理与责任承担、暂停估值情形',/暂停估值/.test(p)?'暂停估值':'估值或计价错误'];
+ const section=chapters[ch]?.find(([,re])=>re.test(t));
+ return [section?.[0]||'讲义未覆盖或待核对',t];
+}
+function element(tag,label,parent){const e=document.createElement(tag);e.textContent=label;parent.append(e);return e;}
+function button(label,parent,fn){const b=element('button',label,parent);b.onclick=fn;return b;}
+function report(list,start){
+ const q=list[start];
+ quiz.replaceChildren();groups.hidden=true;quiz.hidden=false;
+ button('← 返回考点',quiz,()=>{quiz.hidden=true;groups.hidden=false;render();});
+ element('p','组内 '+(start+1)+' / '+list.length+' · 原题第 '+q.number+' 题',quiz);
+ element('h2',q.prompt,quiz);
+ const multi=q.answer.length>1, selected=new Set(saved[q.id]||[]), locked=Object.hasOwn(saved,q.id);
+ const options=q.options.map((o,i)=>{
+  const b=button(String.fromCharCode(65+i)+'．'+o,quiz,()=>{
+   if(!multi){selected.clear();selected.add(i);submit();}
+   else{if(selected.has(i))selected.delete(i);else selected.add(i);b.setAttribute('aria-pressed',String(selected.has(i)));b.style.outline=selected.has(i)?'2px solid #184da9':'';}
+  });b.className='option';return b;
+ });
+ const confirm=multi?button('提交答案',quiz,()=>{if(selected.size)submit()}):null;
+ const fb=element('p','',quiz);fb.id='feedback';fb.setAttribute('aria-live','polite');
+ function reveal(){
+  options.forEach((b,i)=>{b.disabled=true;if(q.answer.includes(i))b.classList.add('correct');else if(selected.has(i))b.classList.add('wrong');});
+  if(confirm)confirm.disabled=true;
+  const correct=selected.size===q.answer.length&&q.answer.every(i=>selected.has(i));
+  fb.textContent=(correct?'答对了':'答错了')+' · 正确答案：'+q.answer.map(i=>String.fromCharCode(65+i)).join('、')+'\n'+(q.explanation||'原题未附解析。');
+ }
+ function submit(){saved[q.id]=[...selected];try{localStorage.setItem(key,JSON.stringify(saved))}catch{}reveal();}
+ if(locked)reveal();
+ button('上一题',quiz,()=>report(list,start-1)).disabled=start===0;
+ button('下一题',quiz,()=>report(list,start+1)).disabled=start===list.length-1;
+ window.scrollTo(0,0);
+}
+const catalog=new Map();
+let count=0;
+function render(){
+ const open=new Set([...groups.querySelectorAll('details[open]')].map(e=>e.dataset.section));
+ groups.replaceChildren();
+ status.textContent='原题 501–1000、1301–1419 · 去重后 '+count+' 道 · 独立记录进度';
+ for(const [section,topics] of [...catalog].sort(([a],[b])=>a.localeCompare(b,'zh',{numeric:true}))){
+  const d=element('details','',groups);d.dataset.section=section;d.open=open.has(section);
+  element('summary',section+' · '+[...topics.values()].flat().length+' 道',d);
+  for(const [topic,list] of [...topics].sort((a,b)=>b[1].length-a[1].length)){
+   const answered=list.filter(q=>Object.hasOwn(saved,q.id)).length;
+   button(topic+'（'+answered+'/'+list.length+'）',element('p','',d),()=>{
+    report(list,Math.max(0,list.findIndex(q=>!Object.hasOwn(saved,q.id))));
+   });
+  }
+ }
+}
+fetch('./data/fund2.json').then(r=>{if(!r.ok)throw Error(r.status);return r.json()}).then(bank=>{
+ if(bank.length!==1419)throw Error('题库版本不匹配');
+ const seen=new Set(bank.filter((_,i)=>!pending(i)).map(signature));
+ bank.forEach((q,i)=>{
+  if(!pending(i))return;
+  const sig=signature(q);if(seen.has(sig))return;seen.add(sig);count++;
+  const [section,topic]=classify(q);
+  if(!catalog.has(section))catalog.set(section,new Map());
+  const topics=catalog.get(section);
+  if(!topics.has(topic))topics.set(topic,[]);
+  topics.get(topic).push({...q,number:i+1});
+ });
+ render();
+}).catch(e=>{status.textContent='题库没有加载成功：'+e.message;});
+</script>
+</html>
