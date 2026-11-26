@@ -16,6 +16,8 @@ details.section-complete>summary{color:#166534}
 <a href="./">← 返回基金刷题首页</a>
 <h1>科目二剩余考点</h1>
 <p id="status">正在加载题库…</p>
+<button id="review-toggle" type="button" hidden>考前速记 · 按章看知识点</button>
+<div id="review-notes" hidden></div>
 <main id="groups"></main>
 <section id="quiz" hidden></section>
 <script>
@@ -80,6 +82,55 @@ function report(list,start){
  window.scrollTo(0,0);
 }
 const catalog=new Map();
+const notes=byId('review-notes'), toggle=byId('review-toggle');
+const chapterNames={3:'投资管理基础',5:'固定收益投资',6:'衍生工具',12:'基金业绩评价',14:'投资交易与结算',15:'估值、费用与会计核算',16:'利润分配与税收'};
+function showNotes(){
+ const tree=new Map();
+ for(const [section,topics] of [...catalog].sort(([a],[b])=>a.localeCompare(b,'zh',{numeric:true}))){
+  const number=section.match(/^\d+(?=-)/)?.[0];
+  const title=number?'第'+number+'章 '+chapterNames[number]:'讲义未覆盖或待核对';
+  if(!tree.has(title))tree.set(title,[]);
+  tree.get(title).push([section,topics]);
+ }
+ element('p','只汇总剩余题覆盖的知识点。优先看解析中的结论；旧题里的法规和数字以考试教材为准。',notes);
+ for(const [title,sections] of tree){
+  const chapter=element('details','',notes);
+  element('summary',title,chapter);
+  for(const [section,topics] of sections){
+   element('h3',section,chapter);
+   for(const [topic,list] of topics){
+    element('h4',topic,chapter);
+    const unique=new Map();
+    for(const q of list){
+     const answer=q.answer.map(i=>q.options[i]).join('；');
+     const explanation=(q.explanation||'').trim();
+     const trap=/错误|不正确|不属于|不包括|不符合|不恰当|不合理|不妥|不可以|不能/.test(q.prompt);
+     const knowledge=explanation||((trap?'辨析题，勿将所选项直接当作规则：':'')+q.prompt+' → '+answer);
+     const fingerprint=norm(knowledge);
+     if(!unique.has(fingerprint))unique.set(fingerprint,{knowledge,refs:[]});
+     unique.get(fingerprint).refs.push({q,answer,trap});
+    }
+    const bullets=element('ul','',chapter);
+    for(const {knowledge,refs} of unique.values()){
+     const li=element('li',knowledge,bullets);
+     li.style.whiteSpace='pre-wrap';
+     const source=element('details','',li);
+     element('summary','查看原题 '+refs.map(({q})=>q.number).join('、'),source);
+     for(const {q,answer,trap} of refs){
+      element('p',q.number+'．'+q.prompt,source);
+      element('p',(trap?'本题应选（辨析题）：':'正确答案：')+answer,source);
+     }
+    }
+   }
+  }
+ }
+}
+toggle.onclick=()=>{
+ const opening=notes.hidden;
+ if(opening&&!notes.childElementCount)showNotes();
+ notes.hidden=!opening;groups.hidden=opening;
+ toggle.textContent=opening?'返回按小节刷题':'考前速记 · 按章看知识点';
+};
 let count=0;
 function render(){
  groups.replaceChildren();
@@ -109,6 +160,7 @@ fetch('./data/fund2.json').then(r=>{if(!r.ok)throw Error(r.status);return r.json
   topics.get(topic).push({...q,number:i+1});
  });
  render();
+ toggle.hidden=false;
 }).catch(e=>{status.textContent='题库没有加载成功：'+e.message;});
 </script>
 </html>
