@@ -8,6 +8,11 @@ body{font:17px/1.6 system-ui,sans-serif;max-width:850px;margin:auto;padding:20px
 section,details{background:white;border:1px solid #dbe1ea;border-radius:10px;padding:12px;margin:10px 0}
 button,select{font:inherit;padding:8px 12px;cursor:pointer} summary{cursor:pointer;font-weight:650} .option{display:block;margin:8px 0;width:100%;text-align:left} #feedback{white-space:pre-wrap} button:disabled{cursor:default;color:#172539} button.correct{background:#c9f0d7} button.wrong{background:#ffdedd} a{color:#184da9}
 </style>
+<style>
+button.topic-complete{background:#dcfce7;border:1px solid #449761;border-radius:6px;color:#14532d}
+details.section-complete{border-color:#8bc99e}
+details.section-complete>summary{color:#166534}
+</style>
 <a href="./">← 返回基金刷题首页</a>
 <h1>科目二剩余考点</h1>
 <p id="status">正在加载题库…</p>
@@ -82,12 +87,17 @@ function render(){
  status.textContent='原题 501–1000、1301–1419 · 去重后 '+count+' 道 · 独立记录进度';
  for(const [section,topics] of [...catalog].sort(([a],[b])=>a.localeCompare(b,'zh',{numeric:true}))){
   const d=element('details','',groups);d.dataset.section=section;d.open=open.has(section);
-  element('summary',section+' · '+[...topics.values()].flat().length+' 道',d);
+  const questions=[...topics.values()].flat();
+  const sectionComplete=questions.every(q=>Object.hasOwn(saved,q.id));
+  if(sectionComplete)d.className='section-complete';
+  element('summary',section+' · '+questions.length+' 道'+(sectionComplete?' · ✓ 已刷完':''),d);
   for(const [topic,list] of [...topics].sort((a,b)=>b[1].length-a[1].length)){
    const answered=list.filter(q=>Object.hasOwn(saved,q.id)).length;
-   button(topic+'（'+answered+'/'+list.length+'）',element('p','',d),()=>{
+   const complete=answered===list.length;
+   const topicButton=button(topic+'（'+answered+'/'+list.length+'）'+(complete?' ✓ 已刷完':''),element('p','',d),()=>{
     report(list,Math.max(0,list.findIndex(q=>!Object.hasOwn(saved,q.id))));
    });
+   if(complete)topicButton.className='topic-complete';
   }
  }
 }
