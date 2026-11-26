@@ -82,23 +82,18 @@ function report(list,start){
 const catalog=new Map();
 let count=0;
 function render(){
- const open=new Set([...groups.querySelectorAll('details[open]')].map(e=>e.dataset.section));
  groups.replaceChildren();
  status.textContent='原题 501–1000、1301–1419 · 去重后 '+count+' 道 · 独立记录进度';
  for(const [section,topics] of [...catalog].sort(([a],[b])=>a.localeCompare(b,'zh',{numeric:true}))){
-  const d=element('details','',groups);d.dataset.section=section;d.open=open.has(section);
-  const questions=[...topics.values()].flat();
-  const sectionComplete=questions.every(q=>Object.hasOwn(saved,q.id));
-  if(sectionComplete)d.className='section-complete';
-  element('summary',section+' · '+questions.length+' 道'+(sectionComplete?' · ✓ 已刷完':''),d);
-  for(const [topic,list] of [...topics].sort((a,b)=>b[1].length-a[1].length)){
-   const answered=list.filter(q=>Object.hasOwn(saved,q.id)).length;
-   const complete=answered===list.length;
-   const topicButton=button(topic+'（'+answered+'/'+list.length+'）'+(complete?' ✓ 已刷完':''),element('p','',d),()=>{
-    report(list,Math.max(0,list.findIndex(q=>!Object.hasOwn(saved,q.id))));
-   });
-   if(complete)topicButton.className='topic-complete';
-  }
+  const list=[...topics.values()].flat().sort((a,b)=>a.number-b.number);
+  const answered=list.filter(q=>Object.hasOwn(saved,q.id)).length;
+  const complete=answered===list.length;
+  const title=section==='6-1 衍生工具概述'?'6-1 衍生工具：分类与特点':section;
+  const card=element('section','',groups);
+  const sectionButton=button(title+'（'+answered+'/'+list.length+'）'+(complete?' ✓ 已刷完':''),card,()=>{
+   report(list,Math.max(0,list.findIndex(q=>!Object.hasOwn(saved,q.id))));
+  });
+  if(complete)sectionButton.className='topic-complete';
  }
 }
 fetch('./data/fund2.json').then(r=>{if(!r.ok)throw Error(r.status);return r.json()}).then(bank=>{
