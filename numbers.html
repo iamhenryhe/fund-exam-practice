@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="zh-CN">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>基金考试数字题</title>
+<style>
+body{font:17px/1.65 system-ui,sans-serif;max-width:820px;margin:auto;padding:20px;background:#f5f7fb;color:#172539}button,select{font:inherit;padding:6px 12px}article{background:white;border:1px solid #dbe1ea;border-radius:10px;padding:14px;margin:10px 0;white-space:pre-wrap}article p{margin:0 0 6px}strong{color:#166534}a{color:#184da9}
+</style>
+<a href="./">← 返回首页</a>
+<h1>数字题</h1>
+<label>科目 <select id="subject"><option value="fund1">科目一</option><option value="fund2">科目二</option></select></label>
+<p id="message" role="status"></p>
+<main id="cards"></main>
+<button id="more" hidden>再显示 30 道</button>
+<script>
+const el=id=>document.getElementById(id);
+const banks=new Map();
+const compact=s=>s.normalize('NFKC').replace(/\s+/g,'');
+const unit=/(?:%|‰|个百分点|基点|个?工作日|交易日|自然日|天|个月|年|小时|分钟|亿元|万元|元|万份|份|个|次|倍|人|家|笔)/;
+function numeric(s){
+ const v=compact(s);
+ const simple=/^(?:(?:至少|最多|不少于|不超过|低于|高于|约|满|超过|不低于|人民币|每年)*[-+−]?[0-9０-９零〇一二两三四五六七八九十百千万亿]+(?:[.,／/][0-9]+)*(?:%|‰|[个工作交易自然日天月年小时分钟亿万元份次倍人家笔点基税率年内以上以下左右整]*)[、，,；;至到~～—-]?)+[。.]?$/;
+ return simple.test(v)||new RegExp('[0-9]'+unit.source).test(v);
+}
+function collect(bank){
+ const seen=new Set(), result=[];
+ for(const q of bank){
+  const answers=q.answer.map(i=>q.options[i]);
+  if(!answers.length||answers.some(a=>typeof a!=='string'))continue;
+  if(!answers.some(numeric))continue;
+  const id=JSON.stringify([compact(q.prompt),answers.map(compact).sort()]);
+  if(seen.has(id))continue;
+  seen.add(id);result.push({prompt:q.prompt,answers});
+ }
+ return result;
+}
+let current=[],shown=0,version=0;
+function append(){
+ const end=Math.min(shown+30,current.length),batch=document.createDocumentFragment();
+ for(;shown<end;shown++){
+  const item=current[shown],card=document.createElement('article'),p=document.createElement('p'),answer=document.createElement('strong');
+  p.textContent=item.prompt;answer.textContent='正确答案：'+item.answers.join('；');
+  card.append(p,answer);batch.append(card);
+ }
+ el('cards').append(batch);el('more').hidden=shown>=current.length;
+ el('message').textContent='共 '+current.length+' 道 · 已显示 '+shown+' 道';
+}
+async function load(){
+ const id=el('subject').value, seq=++version;
+ el('cards').replaceChildren();el('more').hidden=true;el('message').textContent='正在筛选题库…';shown=0;
+ try{
+  if(!banks.has(id)){
+   const response=await fetch('./data/'+id+'.json');
+   if(!response.ok)throw Error('HTTP '+response.status);
+   banks.set(id,collect(await response.json()));
+  }
+  if(seq!==version)return;
+  current=banks.get(id);append();
+ }catch(e){if(seq===version)el('message').textContent='无法加载题库，请刷新重试。';}
+}
+el('subject').addEventListener('change',load);el('more').addEventListener('click',append);load();
+</script>
+</html>
