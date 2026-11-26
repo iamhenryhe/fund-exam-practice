@@ -56,8 +56,8 @@ function element(tag,label,parent){const e=document.createElement(tag);e.textCon
 function button(label,parent,fn){const b=element('button',label,parent);b.onclick=fn;return b;}
 function report(list,start){
  const q=list[start];
- quiz.replaceChildren();groups.hidden=true;quiz.hidden=false;
- button('← 返回考点',quiz,()=>{quiz.hidden=true;groups.hidden=false;render();});
+ quiz.replaceChildren();groups.hidden=true;quiz.hidden=false;toggle.hidden=true;
+ button('← 返回考点',quiz,()=>{quiz.hidden=true;groups.hidden=false;toggle.hidden=false;render();});
  element('p','组内 '+(start+1)+' / '+list.length+' · 原题第 '+q.number+' 题',quiz);
  element('h2',q.prompt,quiz);
  const multi=q.answer.length>1, selected=new Set(saved[q.id]||[]), locked=Object.hasOwn(saved,q.id);
