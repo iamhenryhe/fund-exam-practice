@@ -2,7 +2,8 @@ const fs=require('node:fs');
 const assert=require('node:assert/strict');
 const raw=fs.readFileSync(0,'utf8').replace(/\f/g,'\n');
 const marks=[...raw.matchAll(/^\s*(\d{1,3})、/gm)];
-const clean=s=>s.split('\n').map(l=>l.trim().replace(/\s{5,}(?:取|获|90|80|yt|jm|信|微|加|题|真|多|更)\s*$/,'').trim()).filter(l=>l&&!/^(?:取|获|yt|jm|信|微|加|题|真|多|更|基金从业-基金法律法规|第\d+讲.*|模考密训.*)$/.test(l)).join('\n');
+// Input: pdftotext -nodiag -layout SOURCE.pdf -
+const clean=s=>s.split('\n').map(l=>l.trim()).filter(l=>l&&!/^(?:基金从业-基金法律法规|第\d+讲.*|模考密训.*)$/.test(l)).reduce((out,line)=>out+(!out?'':/^[ⅠⅡⅢⅣⅤⅥⅦⅧ]/.test(line)?'\n':/[a-z0-9]$/i.test(out)&&/^[a-z0-9]/i.test(line)?' ':'')+line,'').replace(/[（(]\s+[）)]/g,'（ ）');
 const sets=[[],[]];
 let set=0;
 for(let i=0;i<marks.length;i++){

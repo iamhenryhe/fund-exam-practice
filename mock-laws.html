@@ -19,7 +19,7 @@ if(set==='1'||set==='2'){
  const key='fundlab-mock-laws-v1-'+set;
  let saved={};
  try{saved=JSON.parse(localStorage.getItem(key)||'{}')||{};}catch{}
- fetch('./data/mock-laws.json').then(r=>{if(!r.ok)throw Error(r.status);return r.json()}).then(sets=>{
+ fetch('./data/mock-laws.json?v=clean1').then(r=>{if(!r.ok)throw Error(r.status);return r.json()}).then(sets=>{
  const bank=sets[Number(set)-1];
  let wrongOnly=false;
  const wrong=()=>bank.flatMap((q,j)=>Object.hasOwn(saved,j)&&saved[j]!==q.answer?[j]:[]);
