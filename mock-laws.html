@@ -21,12 +21,21 @@ if(set==='1'||set==='2'){
  try{saved=JSON.parse(localStorage.getItem(key)||'{}')||{};}catch{}
  fetch('./data/mock-laws.json').then(r=>{if(!r.ok)throw Error(r.status);return r.json()}).then(sets=>{
  const bank=sets[Number(set)-1];
+ let wrongOnly=false;
+ const wrong=()=>bank.flatMap((q,j)=>Object.hasOwn(saved,j)&&saved[j]!==q.answer?[j]:[]);
  function render(i){
   host.replaceChildren();
+  const misses=wrong();
+  const toggle=add('button',wrongOnly?'返回全部题目':'只看错题（'+misses.length+'）');
+  toggle.type='button';
+  toggle.onclick=()=>{wrongOnly=!wrongOnly;render(wrongOnly?(misses.includes(i)?i:misses[0]):(i??Math.max(0,bank.findIndex((_,j)=>!Object.hasOwn(saved,j)))));};
+  if(wrongOnly&&!misses.length){add('p','这套卷目前没有错题。');return;}
+  const visible=wrongOnly?misses:bank.map((_,j)=>j);
+  const position=visible.indexOf(i);
   const q=bank[i];
   const label=add('label','跳题 ');
   const picker=add('select','',label);
-  bank.forEach((_,j)=>{const opt=add('option',(j+1)+' 题'+(Object.hasOwn(saved,j)?' ✓':''),picker);opt.value=j;});
+  visible.forEach(j=>{const opt=add('option',(j+1)+' 题'+(Object.hasOwn(saved,j)?' ✓':''),picker);opt.value=j;});
   picker.value=i;picker.onchange=()=>render(Number(picker.value));
   add('h2','第 '+(i+1)+' 题 · '+q.question);
   const buttons=q.options.map((o,j)=>{
@@ -37,14 +46,15 @@ if(set==='1'||set==='2'){
   function reveal(){
    buttons.forEach((b,j)=>{b.disabled=true;if(j===q.answer)b.classList.add('correct');else if(j===saved[i])b.classList.add('wrong');});
    feedback.textContent=(saved[i]===q.answer?'答对了':'答错了')+' · 资料答案：'+'ABCD'[q.answer];
-   picker.options[i].textContent=(i+1)+' 题 ✓';
+   picker.options[position].textContent=(i+1)+' 题 ✓';
+   if(!wrongOnly)toggle.textContent='只看错题（'+wrong().length+'）';
    progress.textContent=score();
   }
   function score(){return '已答 '+Object.keys(saved).length+' / '+bank.length+' · 答对 '+bank.filter((q,j)=>saved[j]===q.answer).length+' 道';}
   const progress=add('p',score());
   if(Object.hasOwn(saved,i))reveal();
-  const prev=add('button','上一题');prev.disabled=i===0;prev.onclick=()=>render(i-1);
-  const next=add('button','下一题');next.disabled=i===bank.length-1;next.onclick=()=>render(i+1);
+  const prev=add('button','上一题');prev.disabled=position===0;prev.onclick=()=>render(visible[position-1]);
+  const next=add('button','下一题');next.disabled=position===visible.length-1;next.onclick=()=>render(visible[position+1]);
  }
  render(Math.max(0,bank.findIndex((_,i)=>!Object.hasOwn(saved,i))));
  }).catch(()=>{host.textContent='加载失败，请刷新重试。';});
