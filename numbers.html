@@ -14,6 +14,7 @@ summary{cursor:pointer;font-weight:700;padding:4px 0}
 <h1>数字题</h1>
 <label>科目 <select id="subject"><option value="fund1">科目一</option><option value="fund2">科目二</option></select></label>
 <p id="message" role="status"></p>
+<button id="export" type="button">下载两科清单（TXT）</button>
 <main id="cards"></main>
 <script>
 const el=id=>document.getElementById(id);
@@ -38,48 +39,90 @@ function collect(bank){
  return result;
 }
 let version=0;
-const labels=['时间与期限','计算与数学运算','比例、费率与百分比','金额、资产与份额门槛','人数、家数与次数','其他数字规定'];
-function classify(item){
- const p=compact(item.prompt), a=compact(item.answers.join('；'));
- const ask=p.slice(-110);
- if(/请计算|计算得|由此可算|算术平均|几何平均|加权平均|标准差|协方差|相关系数|方差|现值|终值|到期收益率|久期|凸性|夏普比率|特雷诺比率|詹森|跟踪误差|盈亏平衡/.test(ask)||
-   /(?:已知|假设|某[只家位个笔]|如下表)/.test(p)&&/约为|等于|是多少|所占比例|为\(|是多少|应为|计算/.test(ask)&&!/至少|不得|不超过|不低于|最低|最高/.test(ask))return 1;
- if(/工作日|交易日|自然日|星期|个月|个季度|小时|分钟|年内|年期|持有期|募集期|保存期限|有效期|几天|多久/.test(ask)||/\d(?:年|月|日|天|小时|分钟)/.test(a)||/\d+个(?:工作日|交易日|自然日|月)/.test(a))return 0;
- if(/[%‰]|百分点|基点/.test(a)||/比例|费率|百分之|百分比|折扣/.test(ask))return 2;
- if(/万元|亿元|人民币|资产规模|注册资本|最低金额|最低份额|万份|认购金额/.test(ask)||/\d(?:亿|万)?(?:元|份)/.test(a))return 3;
- if(/人数|家数|次数|名投资者|多少人|多少家|多少次|几次|几人|几家/.test(ask)||/\d(?:人|家|名|次|笔)/.test(a))return 4;
- return 5;
+const numberPattern=/(?<![\d.])[+−-]?\d+(?:,\d{3})*(?:\.\d+)?|[零〇一二两三四五六七八九十百千万亿]+(?=(?:个?(?:工作日|交易日|自然日|月|季度)|年|日|天|小时|分钟|人|家|次|倍|元|份|笔|%|‰|$))/g;
+function chinese(s){
+ const digits='零一二三四五六七八九', units={十:10,百:100,千:1000};
+ let total=0,part=0,d=0;
+ for(const c of s.replace(/两/g,'二').replace(/〇/g,'零')){
+  if(digits.includes(c))d=digits.indexOf(c);
+  else if(units[c]){part+=(d||1)*units[c];d=0;}
+  else{total=c==='亿'?(total+part+d)*1e8:total+(part+d)*1e4;part=0;d=0;}
+ }
+ return total+part+d;
 }
+function values(item){
+ return [...new Set((compact(item.answers.join('；')).match(numberPattern)||[]).map(x=>/^\d|^[+−-]/.test(x)?Number(x.replace(/,/g,'').replace('−','-')):chinese(x)))];
+}
+function parts(item){
+ const prompt=item.prompt;
+ const blank=/[（(][\s\u3000＿_]*[）)]|[_＿]{2,}/g;
+ const count=[...prompt.matchAll(blank)].length;
+ const a=item.answers.length===1&&count>1?item.answers[0].split(/\s*[；;、，,]\s*(?!\d{3}(?:\D|$))/):item.answers;
+ if(count&&count===a.length){
+  const chunks=prompt.split(blank);
+  return chunks.flatMap((t,i)=>i<a.length?[[t,false],[a[i],true]]:[[t,false]]);
+ }
+ return [[prompt,false],['\n题库答案：',false],[item.answers.join('；'),true]];
+}
+function groupsFor(items){
+ const buckets=new Map();
+ for(const item of items){
+  const nums=values(item);
+  for(const n of nums.length?nums:[Infinity]){
+   if(!buckets.has(n))buckets.set(n,[]);
+   buckets.get(n).push(item);
+  }
+ }
+ return [...buckets].sort(([a],[b])=>a-b);
+}
+const groupTitle=n=>Number.isFinite(n)?String(n):'其他数字表述';
+const line=item=>parts(item).map(([t])=>t).join('');
 function render(items){
- const buckets=labels.map(()=>[]);
- items.forEach(item=>buckets[classify(item)].push(item));
  const batch=document.createDocumentFragment();
- buckets.forEach((items,i)=>{
-  if(!items.length)return;
+ for(const [n,list] of groupsFor(items)){
   const section=document.createElement('details'),title=document.createElement('summary');
-  title.textContent=labels[i]+' · '+items.length+' 道';
+  title.textContent=groupTitle(n)+' · '+list.length+' 道';
   section.append(title);
-  for(const item of items){
-   const card=document.createElement('article'),p=document.createElement('p'),answer=document.createElement('strong');
-   p.textContent=item.prompt;answer.textContent='正确答案：'+item.answers.join('；');
-   card.append(p,answer);section.append(card);
+  for(const item of list){
+   const card=document.createElement('article');
+   for(const [t,green] of parts(item)){
+    if(!green)card.append(document.createTextNode(t));
+    else{const b=document.createElement('strong');b.textContent=t;card.append(b);}
+   }
+   section.append(card);
   }
   batch.append(section);
- });
+ }
  el('cards').replaceChildren(batch);
- el('message').textContent='共 '+items.length+' 道 · 点击分类展开全部题目';
+ el('message').textContent='共 '+items.length+' 道原题 · 多个答案数字的题会出现在多个组，单位保持不变';
 }
+async function getBank(id){
+ if(!banks.has(id)){
+  const response=await fetch('./data/'+id+'.json');
+  if(!response.ok)throw Error('HTTP '+response.status);
+  banks.set(id,collect(await response.json()));
+ }
+ return banks.get(id);
+}
+el('export').onclick=async()=>{
+ try{
+  const all=await Promise.all(['fund1','fund2'].map(getBank));
+  const lines=['基金考试数字题｜历史题库摘录，规则以考试教材为准','整理要求：按数字合并记忆，保留单位与适用条件；不要把历史题库答案视作现行规则。'];
+  all.forEach((items,i)=>{
+   lines.push('\n# 科目'+(i+1));
+   for(const [n,list] of groupsFor(items))lines.push('\n## '+groupTitle(n),...list.map(item=>'- '+line(item)));
+  });
+  const url=URL.createObjectURL(new Blob([lines.join('\n')],{type:'text/plain;charset=utf-8'}));
+  const link=document.createElement('a');link.href=url;link.download='基金考试数字题-两科清单.txt';link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+ }catch{el('message').textContent='清单生成失败，请重试。';}
+};
 async function load(){
  const id=el('subject').value, seq=++version;
  el('cards').replaceChildren();el('message').textContent='正在筛选题库…';
  try{
-  if(!banks.has(id)){
-   const response=await fetch('./data/'+id+'.json');
-   if(!response.ok)throw Error('HTTP '+response.status);
-   banks.set(id,collect(await response.json()));
-  }
+  const items=await getBank(id);
   if(seq!==version)return;
-  render(banks.get(id));
+  render(items);
  }catch(e){if(seq===version)el('message').textContent='无法加载题库，请刷新重试。';}
 }
 el('subject').addEventListener('change',load);load();
