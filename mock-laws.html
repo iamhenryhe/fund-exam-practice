@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="zh-CN">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>科目一模拟题</title>
+<style>
+body{font:17px/1.65 system-ui,sans-serif;max-width:800px;margin:auto;padding:20px;background:#f5f7fb;color:#172539}
+main{background:white;padding:18px;border-radius:12px}button,select{font:inherit;padding:8px;margin:4px}.option{display:block;text-align:left;width:100%;white-space:pre-wrap}.correct{background:#dcfce7}.wrong{background:#fee2e2}h2{white-space:pre-wrap;font-size:1.2rem}a{color:#184da9}
+</style>
+<a href="./">← 返回刷题首页</a>
+<h1>科目一 · 模拟题</h1>
+<nav><p><a href="?set=1">模拟卷一 · 模考密训一</a></p><p><a href="?set=2">模拟卷二 · 5 月模考密训班二</a></p></nav>
+<main id="exam" hidden></main>
+<script>
+const set=new URLSearchParams(location.search).get('set'), host=document.getElementById('exam');
+function add(tag,txt,parent=host){const e=document.createElement(tag);e.textContent=txt;parent.append(e);return e;}
+if(set==='1'||set==='2'){
+ host.hidden=false;host.textContent='正在加载模拟卷…';
+ const key='fundlab-mock-laws-v1-'+set;
+ let saved={};
+ try{saved=JSON.parse(localStorage.getItem(key)||'{}')||{};}catch{}
+ fetch('./data/mock-laws.json').then(r=>{if(!r.ok)throw Error(r.status);return r.json()}).then(sets=>{
+ const bank=sets[Number(set)-1];
+ function render(i){
+  host.replaceChildren();
+  const q=bank[i];
+  const label=add('label','跳题 ');
+  const picker=add('select','',label);
+  bank.forEach((_,j)=>{const opt=add('option',(j+1)+' 题'+(Object.hasOwn(saved,j)?' ✓':''),picker);opt.value=j;});
+  picker.value=i;picker.onchange=()=>render(Number(picker.value));
+  add('h2','第 '+(i+1)+' 题 · '+q.question);
+  const buttons=q.options.map((o,j)=>{
+   const b=add('button','ABCD'[j]+'．'+o);b.className='option';
+   b.onclick=()=>{saved[i]=j;try{localStorage.setItem(key,JSON.stringify(saved));}catch{}reveal();};return b;
+  });
+  const feedback=add('p','');feedback.setAttribute('role','status');
+  function reveal(){
+   buttons.forEach((b,j)=>{b.disabled=true;if(j===q.answer)b.classList.add('correct');else if(j===saved[i])b.classList.add('wrong');});
+   feedback.textContent=(saved[i]===q.answer?'答对了':'答错了')+' · 资料答案：'+'ABCD'[q.answer];
+   picker.options[i].textContent=(i+1)+' 题 ✓';
+   progress.textContent=score();
+  }
+  function score(){return '已答 '+Object.keys(saved).length+' / '+bank.length+' · 答对 '+bank.filter((q,j)=>saved[j]===q.answer).length+' 道';}
+  const progress=add('p',score());
+  if(Object.hasOwn(saved,i))reveal();
+  const prev=add('button','上一题');prev.disabled=i===0;prev.onclick=()=>render(i-1);
+  const next=add('button','下一题');next.disabled=i===bank.length-1;next.onclick=()=>render(i+1);
+ }
+ render(Math.max(0,bank.findIndex((_,i)=>!Object.hasOwn(saved,i))));
+ }).catch(()=>{host.textContent='加载失败，请刷新重试。';});
+}
+</script>
+</html>
